@@ -1,0 +1,14 @@
+
+networks:
+  media: null
+
+services:
+  rest_srv:
+    image: rest_image:latest
+    init: true
+    networks:
+      media: null
+    tty: yes
+    ports: 
+      - 8080:8080
+

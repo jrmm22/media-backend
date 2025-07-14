@@ -1,0 +1,26 @@
+
+from ubuntu:22.04
+
+
+ENV  DEBIAN_FRONTEND=noninteractive
+RUN : \
+    ; apt-get update \
+    ; apt install -y openjdk-17-jdk openjdk-17-jre \
+    ; apt-get install -y locales \
+    ; locale-gen "en_US.UTF-8" \
+    ; dpkg-reconfigure locales \
+    ;
+
+RUN : \
+    ; useradd -m -G users -s /bin/bash user \
+    ;
+
+ADD src.tar /home/user/
+COPY run_java.sh /home/user/
+RUN : \
+    ; cd /home/user/ \
+    ; javac -d out $(find src/main/java -name "*.java") \
+    ; chmod +x run_java.sh \
+    ;
+
+USER user
