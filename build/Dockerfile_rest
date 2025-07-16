@@ -3,7 +3,18 @@ ARG  BASE_VERSION
 #ENV  BASE_VERSION=0.1
 from base_image:${BASE_VERSION}
 
-#USER root
+USER root
+
+RUN : \
+    ; apt-get update \
+    ; apt install sqlite3 \
+    ; 
+
+#COPY tiny.db /home/user/
+#RUN : \
+#    ; createdb tiny.db \
+#    ;
+
 #RUN : \
 #    ; useradd -m -G users -s /bin/bash user_rest
 

@@ -5,9 +5,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class EncoderWorker implements Runnable {
     private final Job job;
+	private final JobDAO jobDao;
 
-    public EncoderWorker(Job job) {
+    public EncoderWorker(Job job, JobDAO jobDao) {
         this.job = job;
+		this.jobDao = jobDao;
     }
 
     @Override
@@ -39,9 +41,11 @@ public class EncoderWorker implements Runnable {
                 Logger.log(" Job " + job.id + " failed with code: " + exitCode);
                 Metrics.increment("encoder.jobs.failed");
             }
+			jobDao.updateStatus(job.id(), "done");
         } catch (Exception e) {
             Logger.log("Job failed: " + job.id + " reason: " + e.getMessage());
             Metrics.increment("encoder.jobs.failed");
+			jobDao.updateStatus(job.id(), "failed");
         }
     }
 }

@@ -4,22 +4,18 @@ package com.example.media;
 import java.util.concurrent.*;
 import java.io.IOException;
 
+import java.sql.*;
+
 public class JobOrchestrator {
+    static JobDAO jobDao;
     public static final ExecutorService pool = Executors.newFixedThreadPool(100);
 
-    public static void main(String[] args) throws InterruptedException, IOException  {
+    public static void main(String[] args) throws InterruptedException, IOException, SQLException  {
 
-        ApiServer.start();
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:jobs.db");
+        jobDao = new SqliteDAO(conn);
+		new Thread(new JobDispatcher(jobDao)).start();
+        ApiServer.start(jobDao);
 
-        /*for (int i = 0; i < 20; i++) {
-            Job job = new Job("job-" + i, "raw_" + i + ".mp4");
-            pool.submit(new EncoderWorker(job));
-        }*/
-
-        //pool.shutdown();
-        //pool.awaitTermination(600, TimeUnit.SECONDS);
-
-        //System.out.println("\n=== METRICS ===");
-        //System.out.println(Metrics.snapshot());
     }
 }

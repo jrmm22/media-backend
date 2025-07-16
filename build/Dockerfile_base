@@ -12,15 +12,31 @@ RUN : \
     ;
 
 RUN : \
+    ; apt-get update \
+    ; apt-get install wget -y \
+    ;
+
+RUN : \
     ; useradd -m -G users -s /bin/bash user \
     ;
 
 ADD src.tar /home/user/
 COPY run_java.sh /home/user/
+
 RUN : \
+    ; cd /tmp \
+    ; 
+
+RUN : \
+    ; set -e \
     ; cd /home/user/ \
-    ; javac -d out $(find src/main/java -name "*.java") \
+    ; mkdir -p lib \
+    ; cd lib \
+    ; wget https://github.com/xerial/sqlite-jdbc/releases/download/3.50.2.0/sqlite-jdbc-3.50.2.0.jar \
+    ; cd /home/user/ \
+    ; javac -cp "lib/sqlite-jdbc-3.50.2.0.jar" -d out $(find src/main/java -name "*.java") \
     ; chmod +x run_java.sh \
+    ; chown user:user -R out/ lib \
     ;
 
 USER user
