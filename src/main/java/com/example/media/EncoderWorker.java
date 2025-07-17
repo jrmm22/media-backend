@@ -2,6 +2,7 @@
 package com.example.media;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.time.LocalDateTime;
 
 public class EncoderWorker implements Runnable {
     private final Job job;
@@ -31,6 +32,7 @@ public class EncoderWorker implements Runnable {
             );
             pb.inheritIO(); // So output is visible
 
+			jobDao.updateTimestamp(job.id(), "started_at", LocalDateTime.now() );
             Process p = pb.start();
             int exitCode = p.waitFor();
 
@@ -41,11 +43,13 @@ public class EncoderWorker implements Runnable {
                 Logger.log(" Job " + job.id + " failed with code: " + exitCode);
                 Metrics.increment("encoder.jobs.failed");
             }
-			jobDao.updateStatus(job.id(), "done");
+			jobDao.updateStatus(job.id(), "success");
+			jobDao.updateTimestamp(job.id(), "finished_at", LocalDateTime.now() );
         } catch (Exception e) {
             Logger.log("Job failed: " + job.id + " reason: " + e.getMessage());
             Metrics.increment("encoder.jobs.failed");
-			jobDao.updateStatus(job.id(), "failed");
+			jobDao.updateStatus(job.id(), "fail");
+			jobDao.updateTimestamp(job.id(), "finished_at", LocalDateTime.now() );
         }
     }
 }

@@ -1,7 +1,7 @@
 
 ARG  BASE_VERSION
 #ENV  BASE_VERSION=0.1
-from base_image:${BASE_VERSION}
+FROM base_image:${BASE_VERSION}
 
 USER root
 

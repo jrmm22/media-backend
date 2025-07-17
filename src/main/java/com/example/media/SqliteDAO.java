@@ -3,8 +3,13 @@ package com.example.media;
 import java.util.*;
 import java.sql.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class SqliteDAO implements JobDAO {
     private final Connection conn;
+	private static final DateTimeFormatter SQL_TIMESTAMP_FORMAT =
+		    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public SqliteDAO(Connection conn) throws SQLException {
         this.conn = conn;
@@ -13,7 +18,9 @@ public class SqliteDAO implements JobDAO {
                     "id TEXT PRIMARY KEY, " +
                     "filename TEXT NOT NULL, " +
                     "status TEXT NOT NULL DEFAULT 'queued', " +
-                    "created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                    "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+					"started_at DATETIME, " +
+					"finished_at DATETIME)");
         }
     }
 
@@ -35,11 +42,7 @@ public class SqliteDAO implements JobDAO {
             ps.setString(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return new Job(
-                    rs.getString("id"),
-                    rs.getString("filename"),
-                    rs.getString("status")
-                );
+                return Job.fromResult(rs);
              }
         } catch (SQLException e) {
             Logger.log("Failed to query job: " + e.getMessage());
@@ -59,21 +62,53 @@ public class SqliteDAO implements JobDAO {
             Logger.log("Failed to insert job: " + e.getMessage());
         }
     }
-	public List<Job> findByStatus(String status) {
+	@Override
+    public List<Job> findByStatus(String status) {
 		List<Job> result = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM jobs WHERE status = ?")) {
-            ps.setString(1, status);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                result.add( new Job(
-                    rs.getString("id"),
-                    rs.getString("filename"),
-                    rs.getString("status")
-				));
-             }
+		try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM jobs WHERE status = ?")) {
+			ps.setString(1, status);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				result.add( Job.fromResult( rs ) );
+		 	}
+		} catch (SQLException e) {
+			Logger.log("Failed to find jobs by status: " + e.getMessage());
+		}
+		return result;
+	}
+		
+
+	@Override
+	public void updateTimestamp(String jobId, String when, LocalDateTime ts) {
+        try (PreparedStatement ps = conn.prepareStatement("UPDATE jobs set " + when + " = ? WHERE id = ?")) {
+            ps.setString(1, ts.format(SQL_TIMESTAMP_FORMAT));
+            ps.setString(2, jobId);
+            int rows = ps.executeUpdate();
+			if (rows == 0) {
+				Logger.log("No job found with ID: " + jobId + " for ts update");
+			}
         } catch (SQLException e) {
             Logger.log("Failed to fetch job by status: " + e.getMessage());
         }
-        return result;
     }
+	@Override
+	public List<Job> findAll() {
+		List<Job> result = new ArrayList<>();
+
+		try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM JOBS")) {
+        	ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				result.add( Job.fromResult(rs) );
+			}
+        } catch (SQLException e) {
+			Logger.log("Failed getting a list of all jobs: " + e.getMessage());
+        }
+		return result;
+	}
+	public List<Job> findAllToday() {
+		List<Job> result = new ArrayList() ;
+		// unimplemented
+		return result;
+	}
+	
 }

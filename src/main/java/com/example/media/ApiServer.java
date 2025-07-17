@@ -9,6 +9,9 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.sql.*;
 
+import java.util.*;
+import java.time.LocalDateTime;
+
 public class ApiServer {
 
     public static void start(JobDAO jobDao) throws IOException, SQLException {
@@ -21,6 +24,28 @@ public class ApiServer {
                 exchange.sendResponseHeaders(200, response.length());
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
+                }
+            }
+        });
+        
+		server.createContext("/list", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                //String response = Metrics.snapshot();
+
+				List<Job> allJobs = jobDao.findAll();
+        		StringBuilder sb = new StringBuilder();
+        		for (var job : allJobs) {
+		            sb.append(job.id()).append(": ").append(job.input()).append(" Status ").append(job.status())
+					  .append(" created: ").append(job.created_at())
+					  .append(" started: ").append(job.started_at())
+					  .append(" finished: ").append(job.finished_at())
+					  .append("\n");
+		        }
+				byte[] bytes = sb.toString().getBytes();
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(bytes);
                 }
             }
         });
@@ -42,6 +67,7 @@ public class ApiServer {
 
                 Job job = new Job(jobId, filename);
                 jobDao.insert(job); // persist to SQLite
+				jobDao.updateTimestamp(job.id(), "created_at", LocalDateTime.now() );
                 //JobOrchestrator.pool.submit(new EncoderWorker(job));
 
                 response = "Submitted job: " + jobId + " for file: " + filename + "\n";
